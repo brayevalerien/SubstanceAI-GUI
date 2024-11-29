@@ -39,7 +39,7 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Th
                         )
                 with gr.Row():
                     generate = gr.Button(value="Generate", variant="primary")
-            with gr.Accordion(label="Data exchange (dev view)", open=True) as dev_view:
+            with gr.Accordion(label="Data exchange (dev view)", open=False) as dev_view:
                 with gr.Row():
                     request_display = gr.JSON(label="Request", max_height=None)
                     response_display = gr.JSON(label="Response", max_height=None)
@@ -65,7 +65,7 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Th
             with gr.Group():
                 resolution_input = gr.Radio(
                     label="Resolution", choices=AVAILABLE_RESOLUTIONS.keys(),
-                    value=list(AVAILABLE_RESOLUTIONS.keys())[0]
+                    value=list(AVAILABLE_RESOLUTIONS.keys())[0], interactive=True
                 )
             with gr.Group():
                 gr.Markdown("Please note that the style image is an upcoming feature and is **not implemented yet**. Uploading an image here will have no effect.")
