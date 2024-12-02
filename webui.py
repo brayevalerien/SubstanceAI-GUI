@@ -1,41 +1,28 @@
 import os
 import gradio as gr
+from api_manager import AVAILABLE_RESOLUTIONS, compose_2D_3D, upload_to_space
 
 VERSION = "0.1.0 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
 
-# TODO extract available resolutions and their handling in a separate module
-# Valid resolutions for the Substance API, see:
-# https://s3d.adobe.io/v1beta/docs#/paths/v1beta-3dscenes-compose/post#request-body
-AVAILABLE_RESOLUTIONS = {
-    "2048 × 2048 | 1:1": (2048, 2048),
-    "2304 × 1792 | 4:3": (2304, 1792),
-    "1792 × 2304 | 3:4": (1792, 2304),
-    "2688 × 1536 | 16:9": (2688, 1536),
-    "1344 × 768  | 7:4": (1344, 768),
-    "1152 × 896  | 9:7": (1152, 896),
-    "896  × 1152 | 7:9": (896, 1152),
-    "1024 × 1024 | 1:1": (1024, 1024),
-}
-
 with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Theme') as demo:
     with gr.Row():
         with gr.Column(scale=2):
-            gr.Image(label="Result", format="png", interactive=False)
+            result = gr.Image(label="Result", format="png", type="filepath", interactive=False)
             with gr.Group() as input_group:
-                blend_file_input = gr.File(label="Upload Blender file")
+                scene_file_input = gr.File(label="Upload 3D scene file in GLB format")
                 with gr.Row():
                     with gr.Column(scale=2):
                         prompt_input = gr.TextArea(label="Prompt", placeholder="Write what you want to see in the image here.")
                     with gr.Column(scale=1):
                         hero_input = gr.Textbox(
                             label="Hero object",
-                            info="Exact name of the product in the Blender scene",
+                            info="Exact name of the product in the scene file",
                             interactive=True
                         )
                         camera_input = gr.Textbox(
                             label="Camera",
-                            info="Exact name of the camera in the Blender scene", value="Camera", interactive=True
+                            info="Exact name of the camera in the scene file", value="Camera", interactive=True
                         )
                 with gr.Row():
                     generate = gr.Button(value="Generate", variant="primary")
@@ -70,7 +57,22 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Th
             with gr.Group():
                 gr.Markdown("Please note that the style image is an upcoming feature and is **not implemented yet**. Uploading an image here will have no effect.")
                 gr.Image(label="Style image")
-
+              
+    # generate.click(
+    #     fn=upload_to_space,
+    #     inputs=[api_key_input, scene_file_input]
+    # )
+    generate.click(
+        fn = compose_2D_3D,
+        inputs=[
+            api_key_input,
+            scene_file_input, prompt_input,
+            hero_input, camera_input,
+            image_count_input, seed_input,
+            resolution_input
+        ],
+        outputs=[result, request_display, response_display]
+    )
 
 if __name__ == "__main__":
     demo.launch()
