@@ -1,9 +1,52 @@
 import os
 import gradio as gr
 from api_manager import AVAILABLE_RESOLUTIONS, compose_2D_3D, upload_to_space
+from random import randint
 
-VERSION = "0.1.0 (beta)"
+VERSION = "0.1.2 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
+
+def call_api(api_key, scene_file: str, prompt: str, hero: str, camera: str, image_count: int, seed: int, resolution: str) -> tuple:
+    """
+    Runs a generation job after checking input sanity.
+
+    Args:
+        api_key (str)
+        scene_file (str): 3D scene file, expects a GLB file (.glb format, exported from Blender for instance)
+        prompt (str): textual prompt describing what has to be seen in the result.
+        hero (str): name of the hero object in the scene file (this object will be left untouched by the AI).
+        camera (str): name of a camera in the scene file.
+        image_count (int): number of variations to generate.
+        seed (int): initial seed, will be incremented for each variation.
+        resolution (str): render resolution, must be a key of AVAILABLE_RESOLUTIONS.
+
+    Returns:
+        tuple: a tuple of 3 elements:
+            str: path to the resulting image (that will be saved to the disk)
+            dict: request json
+            dict: response json
+    """
+    if api_key is None:
+        raise gr.Error("Missing API key, please log in at https://s3d.adobe.io/ to get yours.", title="Input Error")
+    if scene_file is None:
+        raise gr.Error("Missing scene file, please load a GLB file.", title="Input Error")
+    if not scene_file.split(".")[-1].lower() in ["glb", "fbx", "usdz"]:
+        raise gr.Error("Invalid scene file format, please load a GLB file.", title="Input Error")
+    if hero is None:
+        raise gr.Error("Missing hero object, please add the exact name of the hero object in the 3D scene.", title="Input Error")
+    if camera is None:
+        raise gr.Error("Missing camera, please add the exact name of the camera in the 3D scene.", title="Input Error")
+    if image_count is None:
+        raise gr.Error("Missing image count.", title="Input Error")
+    if seed is None:
+        raise gr.Error("Missing seed.", title="Input Error")
+    elif seed == -1:
+        seed = randint(0, 2**63-1) # limiting seed range to positing int64 but that should be enough...
+    if not resolution:
+        raise gr.Error("Missing resolution.", title="Input Error")
+    if prompt is None or len(prompt) == 0:
+        raise gr.Error("Missing prompt.", title="Input Error")
+    return compose_2D_3D(api_key, scene_file, prompt, hero, camera, image_count, seed, resolution)
 
 with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Theme') as demo:
     with gr.Row():
@@ -36,14 +79,14 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Th
                     max_lines=1,
                 )
             with gr.Group():
+                gr.Markdown("Please note that multi-image generation is an upcoming feature and is **not implemented yet**. Only a single image will be generated.")
                 image_count_input = gr.Slider(
                     label="Image count",
                     minimum=1, maximum=16,
                     step=1, interactive=True
                 )
                 seed_input = gr.Number(
-                    label="Seed",
-                    
+                    label="Seed", info="Set to -1 for random seed", minimum=-1
                 )    
             with gr.Group():
                 resolution_input = gr.Radio(
@@ -63,7 +106,7 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Th
     #     inputs=[api_key_input, scene_file_input]
     # )
     generate.click(
-        fn = compose_2D_3D,
+        fn = call_api,
         inputs=[
             api_key_input,
             scene_file_input, prompt_input,
