@@ -3,9 +3,12 @@ import requests
 import os
 import gradio as gr
 from datetime import datetime
+from time import sleep
 
-API_SPACE_ENDPOINT = "https://s3d.adobe.io/v1beta/spaces"
-API_COMPOSE_ENDPOINT = "https://s3d.adobe.io/v1beta/3dscenes/compose"
+API_URL = "https://s3d.adobe.io"
+API_SPACE_ENDPOINT = f"{API_URL}/v1beta/spaces"
+API_COMPOSE_ENDPOINT = f"{API_URL}/v1beta/3dscenes/compose"
+API_JOB_ENDPOINT = f"{API_URL}/v1beta/jobs/"
 
 # Valid resolutions for the Substance API, see:
 # https://s3d.adobe.io/v1beta/docs#/paths/v1beta-3dscenes-compose/post#request-body
@@ -19,6 +22,35 @@ AVAILABLE_RESOLUTIONS = {
     "896  × 1152 | 7:9": {"width": 896, "height": 1152},
     "1024 × 1024 | 1:1": {"width": 1024, "height": 1024},
 }
+
+def handle_error(error_code: int):
+    """
+    Raises an error depending on the HTTP error code. The error is a gradio.Error that will show up in the UI.
+
+    Args:
+        error_code (int): _description_
+
+    Raises:
+        gr.Error: _description_
+    """
+    # TODO: error handling should be moved to webui.py to avoid writting gradio code here.
+    error_messages = {
+        400: "Bad request",
+        403: "Access forbidden",
+        408: "Request timeout",
+        413: "Request entity too large",
+        415: "Unsopported media type",
+        422: "Unprocessable entity",
+        429: "Too many requests",
+        500: "Internal server error",
+    }
+    try:
+        message = error_messages[error_code]
+    except KeyError:
+        message = "Unknown error"
+    finally:
+        print(f"[Error {error_code}] {message}") # debug
+        raise gr.Error(message, title=f"Error {error_code}")
 
 def upload_to_space(api_key: str, file_path: str) -> str:
     """
@@ -39,31 +71,22 @@ def upload_to_space(api_key: str, file_path: str) -> str:
         "Accept": "application/json",
         "Authorization": "Bearer " + api_key
     }
-    print("\n\n========= UPLOADING FILE TO SPACE =========\n\n") # debug
+    print("Asking for space creation...") # debug
     response = requests.post(API_SPACE_ENDPOINT, data=payload, files=files, headers=headers)
-    print(f"{response = }\n") # debug
-    if response.status_code == 200:
+    
+    if response.status_code == 201:
+        print("Space created successfully.") # debug
         return response.json()["id"]
     else:
-        # TODO: error handling should be moved to webui.py to avoid writting gradio code here.
-        error_code = response.status_code
-        try:
-            message = response.json()["message"]
-        except:
-            if error_code == 403:
-                message = "Access to this ressource is forbidden."
-            else:
-                message = "No additional information message."
-        print(f"[Error {error_code}] {message}") # debug
-        raise gr.Error(message, title=f"Error {error_code}")
+        handle_error(response.status_code)
 
-def post_request(api_key: str, scene_file_space: str, prompt: str, hero: str, camera: str, image_count: int, seed: int, resolution: str) -> tuple:
+def post_request(api_key: str, space_id: str, prompt: str, hero: str, camera: str, image_count: int, seed: int, resolution: str) -> tuple:
     """
     Given the various inputs, posts an API request and wait for the job to be finished. It returns the API response only if the job is finished successfully. The payload sent to the API is returned too.
 
     Args:
         api_key (str)
-        scene_file_space (str): space ID where the scene file is stored
+        space_id (str): space ID where the scene file is stored
         prompt (str): textual prompt describing what has to be seen in the result.
         hero (str): name of the hero object in the scene file (this object will be left untouched by the AI).
         camera (str): name of a camera in the scene file.
@@ -79,12 +102,11 @@ def post_request(api_key: str, scene_file_space: str, prompt: str, hero: str, ca
     payload = {
         "cameraName": camera,
         "heroAsset": hero,
-        "numVariations": image_count, # added for clarity but could be removed
         "prompt": prompt,
         "seeds": [seed+i for i in range(image_count)],
         "size": AVAILABLE_RESOLUTIONS[resolution],
         "sources": [{
-            "space": {"id": scene_file_space}
+            "space": {"id": space_id}
         }]
     }
     headers = {
@@ -92,9 +114,29 @@ def post_request(api_key: str, scene_file_space: str, prompt: str, hero: str, ca
         "Accept": "application/json",
         "Authorization": "Bearer " + api_key
     }
+    print("Requesting 2D/3D composition job...") # debug
     response = requests.post(API_COMPOSE_ENDPOINT, json=payload, headers=headers)
-    # TODO write the loop to wait for the job to finish and check success
-    return payload, response.json()
+    
+    if response.status_code == 202:
+        job_id = response.json()["id"]
+        print(f"2D/3D composition job {job_id} started successfully...") # debug
+    else:
+        handle_error(response.status_code)
+
+    retry_after = response.headers["Retry-After"]
+    while True:
+        job_response = requests.get(f"{API_JOB_ENDPOINT}/{job_id}", headers=headers)
+        status = job_response.json()["status"]
+        if status in ["not_started", "running"]:
+            print(f"Job status: {status} (fetching status again in {retry_after}s.)") # debug
+        elif status == "succeeded":
+            return payload, job_response.json()
+        elif status == "failed":
+            api_error_message = job_response.json()["error"]
+            print(f"[Error] {api_error_message}") # debug
+            gr.Error(f"2D/3D composition job failed: {api_error_message}")
+            return payload, job_response.json()
+        sleep(int(retry_after)) # use callback instead when API implements it to stay asynchronous
 
 def save_image(image_data, output_directory: str="./output/") -> str:
     """
@@ -108,7 +150,9 @@ def save_image(image_data, output_directory: str="./output/") -> str:
         str: path to the saved image.
     """
     filename = "substanceai.png" # TODO find next available name
-    # TODO actually write image to disk
+    os.makedirs(output_directory, exist_ok=True)
+    with open(os.path.join(output_directory, filename), "wb") as f:
+        f.write(image_data)
     return os.path.join(output_directory, filename)
 
 def compose_2D_3D(api_key: str, scene_file: str, prompt: str, hero: str, camera: str, image_count: int, seed: int, resolution: str) -> tuple:
@@ -132,8 +176,19 @@ def compose_2D_3D(api_key: str, scene_file: str, prompt: str, hero: str, camera:
             dict: response json
     """
     # TODO add input sanity check
-    scene_file_space = upload_to_space(api_key, scene_file)
-    request, response = post_request(api_key, scene_file_space, prompt, hero, camera, image_count, seed, resolution)
-    image_data = response["result"]["outputs"][0]["image"] # raw image bytes
-    image_path = save_image(image_data, f"./output/{datetime.today().strftime('%Y-%m-%d')}")
+    print(f"\n{' Starting generation ':=^50}\n")
+    space_id = upload_to_space(api_key, scene_file)
+    request, response = post_request(api_key, space_id, prompt, hero, camera, image_count, seed, resolution)
+    try:
+        image_url = response["result"]["outputs"][0]["image"]["url"] # raw image bytes
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": "Bearer " + api_key
+        }
+        image_data = requests.get(image_url, headers=headers).content
+        image_path = save_image(image_data, f"./output/{datetime.today().strftime('%Y-%m-%d')}")
+    except KeyError:
+        image_path = "./assets/error.png"
+    print(f"\n{'':=^50}\n")
     return image_path, request, response
