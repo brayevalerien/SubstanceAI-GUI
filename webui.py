@@ -3,7 +3,7 @@ import gradio as gr
 from api_manager import AVAILABLE_RESOLUTIONS, compose_2D_3D, upload_to_space
 from random import randint
 
-VERSION = "0.1.2 (beta)"
+VERSION = "0.1.3 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
 
 def call_api(api_key, scene_file: str, prompt: str, hero: str, camera: str, image_count: int, seed: int, resolution: str) -> tuple:
