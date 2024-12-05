@@ -3,7 +3,7 @@ import gradio as gr
 from api_manager import AVAILABLE_RESOLUTIONS, compose_2D_3D, upload_to_space
 from random import randint
 
-VERSION = "0.1.3 (beta)"
+VERSION = "0.1.4 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
 
 def call_api(api_key, scene_file: str, prompt: str, hero: str, camera: str, image_count: int, seed: int, resolution: str) -> tuple:
@@ -41,7 +41,7 @@ def call_api(api_key, scene_file: str, prompt: str, hero: str, camera: str, imag
     if seed is None:
         raise gr.Error("Missing seed.", title="Input Error")
     elif seed == -1:
-        seed = randint(0, 2**63-1) # limiting seed range to positing int64 but that should be enough...
+        seed = randint(0, 2**31-1) # limiting seed range to positive int32 but that should be enough...
     if not resolution:
         raise gr.Error("Missing resolution.", title="Input Error")
     if prompt is None or len(prompt) == 0:
@@ -118,4 +118,4 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Th
     )
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(inbrowser=True)

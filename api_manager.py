@@ -155,9 +155,8 @@ def save_image(image_data, output_directory: str="./output/") -> str:
     filename = f"substanceai_{img_num:05d}.png"
     filepath = os.path.join(output_directory, filename)
     while os.path.exists(filepath):
-        print("foo")
         img_num +=1
-        if img_num >= 10000:
+        if img_num >= 100000:
             raise gr.Error(f"Cannot save the image because the output directory ({output_directory}) is full.", title="Save Error")
         filename = f"substanceai_{img_num:05d}.png"
         filepath = os.path.join(output_directory, filename)
@@ -186,7 +185,7 @@ def compose_2D_3D(api_key: str, scene_file: str, prompt: str, hero: str, camera:
             dict: request json
             dict: response json
     """
-    print(f"\n{' Starting generation ':=^50}\n")
+    print(f"\n{' Starting generation ':=^50}")
     space_id = upload_to_space(api_key, scene_file)
     request, response = post_request(api_key, space_id, prompt, hero, camera, image_count, seed, resolution)
     try:
@@ -200,5 +199,5 @@ def compose_2D_3D(api_key: str, scene_file: str, prompt: str, hero: str, camera:
         image_path = save_image(image_data, f"./output/")
     except KeyError:
         image_path = "./assets/error.png"
-    print(f"\n{'':=^50}\n")
+    print(f"{'':=^50}\n")
     return image_path, request, response
