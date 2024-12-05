@@ -26,10 +26,6 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Th
                         )
                 with gr.Row():
                     generate = gr.Button(value="Generate", variant="primary")
-            with gr.Accordion(label="Data exchange (dev view)", open=False) as dev_view:
-                with gr.Row():
-                    request_display = gr.JSON(label="Request", max_height=None)
-                    response_display = gr.JSON(label="Response", max_height=None)
         
         with gr.Column(variant="panel") as settings_column:
             gr.Markdown("# Settings")
@@ -57,6 +53,10 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Th
             with gr.Group():
                 gr.Markdown("Please note that the style image is an upcoming feature and is **not implemented yet**. Uploading an image here will have no effect.")
                 gr.Image(label="Style image")
+    with gr.Accordion(label="Data exchange (dev view)", open=False) as dev_view:
+        with gr.Row():
+            request_display = gr.JSON(label="Request", max_height=None)
+            response_display = gr.JSON(label="Response", max_height=None)
               
     # generate.click(
     #     fn=upload_to_space,
