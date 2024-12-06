@@ -3,7 +3,7 @@ import gradio as gr
 from api_manager import AVAILABLE_RESOLUTIONS, compose_2D_3D, upload_to_space
 from random import randint
 
-VERSION = "0.1.4 (beta)"
+VERSION = "0.2.0 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
 
 def call_api(api_key, scene_file: str, prompt: str, hero: str, camera: str, image_count: int, seed: int, resolution: str) -> tuple:
@@ -22,7 +22,7 @@ def call_api(api_key, scene_file: str, prompt: str, hero: str, camera: str, imag
 
     Returns:
         tuple: a tuple of 3 elements:
-            str: path to the resulting image (that will be saved to the disk)
+            list: a list of str, the paths to the resulting images (that will be saved to the disk)
             dict: request json
             dict: response json
     """
@@ -51,7 +51,7 @@ def call_api(api_key, scene_file: str, prompt: str, hero: str, camera: str, imag
 with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Theme') as demo:
     with gr.Row():
         with gr.Column(scale=2):
-            result = gr.Image(label="Result", format="png", type="filepath", interactive=False)
+            result = gr.Gallery(label="Result", format="png", type="filepath", interactive=False)
             with gr.Group() as input_group:
                 scene_file_input = gr.File(label="Upload 3D scene file in GLB format")
                 with gr.Row():
@@ -79,10 +79,9 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme='Zarkel/IBM_Carbon_Th
                     max_lines=1,
                 )
             with gr.Group():
-                gr.Markdown("Please note that multi-image generation is an upcoming feature and is **not implemented yet**. Only a single image will be generated.")
                 image_count_input = gr.Slider(
                     label="Image count",
-                    minimum=1, maximum=16,
+                    minimum=1, maximum=4,
                     step=1, interactive=True
                 )
                 seed_input = gr.Number(

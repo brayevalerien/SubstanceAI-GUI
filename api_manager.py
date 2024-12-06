@@ -181,7 +181,7 @@ def compose_2D_3D(api_key: str, scene_file: str, prompt: str, hero: str, camera:
 
     Returns:
         tuple: a tuple of 3 elements:
-            str: path to the resulting image (that will be saved to the disk)
+            list: a list of str, the paths to the resulting images (that will be saved to the disk)
             dict: request json
             dict: response json
     """
@@ -189,15 +189,17 @@ def compose_2D_3D(api_key: str, scene_file: str, prompt: str, hero: str, camera:
     space_id = upload_to_space(api_key, scene_file)
     request, response = post_request(api_key, space_id, prompt, hero, camera, image_count, seed, resolution)
     try:
-        image_url = response["result"]["outputs"][0]["image"]["url"] # raw image bytes
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": "Bearer " + api_key
-        }
-        image_data = requests.get(image_url, headers=headers).content
-        image_path = save_image(image_data, f"./output/")
+        image_paths = []
+        for output in response["result"]["outputs"]:
+            image_url = output["image"]["url"] # raw image bytes
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + api_key
+            }
+            image_data = requests.get(image_url, headers=headers).content
+            image_paths.append(save_image(image_data, f"./output/"))
     except KeyError:
-        image_path = "./assets/error.png"
+        image_paths = ["./assets/error.png"]
     print(f"{'':=^50}\n")
-    return image_path, request, response
+    return image_paths, request, response

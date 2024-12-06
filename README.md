@@ -1,9 +1,6 @@
 # SubstanceAI-GUI
 A gradio-based UI for the private beta test of the Adobe Substance API, focusing on the "Compose generative 2D content with 3D scenes" endpoint.
 
-> [!IMPORTANT]
-> This is **still a work in progress** and it is not functional yet. If you see this message, don't expect the project to work out of the box, even if you follow the installation instructions.
-
 ![Screenshot of the UI](./assets/screenshot.png)
 
 ## Installation
