@@ -78,8 +78,15 @@ def call_api(
     )
 
 
+css = """
+.resizable_vertical {
+  resize: vertical;
+  overflow: auto !important;
+}
+"""
+
 with gr.Blocks(
-    title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Theme"
+    title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Theme", css=css
 ) as demo:
     with gr.Row():
         with gr.Column(scale=2):
@@ -89,7 +96,8 @@ with gr.Blocks(
                 type="filepath",
                 object_fit="contain",
                 interactive=False,
-                height=768,
+                height=512,
+                elem_classes=["resizable_vertical"],
             )
             with gr.Group() as input_group:
                 scene_file_input = gr.File(label="Upload 3D scene file in GLB format")
