@@ -24,6 +24,7 @@ AVAILABLE_RESOLUTIONS = {
     "896  × 1152 | 7:9": {"width": 896, "height": 1152},
     "1024 × 1024 | 1:1": {"width": 1024, "height": 1024},
 }
+AVAILABLE_CONTENTCLASSES = ["photo", "art"]
 
 
 class SpaceDesc:
@@ -177,6 +178,7 @@ class APIHandler:
         image_count: int,
         seed: int,
         resolution: str,
+        content_class: str,
     ) -> tuple:
         """
         Given the various inputs, posts an API request and wait for the job to be finished. It returns the API response only if the job is finished successfully. The payload sent to the API is returned too.
@@ -190,6 +192,7 @@ class APIHandler:
             image_count (int): number of variations to generate.
             seed (int): initial seed, will be incremented for each variation.
             resolution (str): render resolution, must be a key of AVAILABLE_RESOLUTIONS.
+            content_class (str): can be "photo" or "art".
 
         Returns:
             tuple: a couple of two dicts:
@@ -203,6 +206,7 @@ class APIHandler:
             "seeds": [seed + i for i in range(image_count)],
             "size": AVAILABLE_RESOLUTIONS[resolution],
             "sources": [{"space": {"id": space_id}}],
+            "contentClass": content_class,
         }
         headers = {
             "Content-Type": "application/json",
@@ -247,6 +251,7 @@ class APIHandler:
         image_count: int,
         seed: int,
         resolution: str,
+        content_class: str,
     ) -> tuple:
         """
         Calls the Substance API compose 2D and 3D endpoint, with proper file and input management.
@@ -260,6 +265,7 @@ class APIHandler:
             image_count (int): number of variations to generate.
             seed (int): initial seed, will be incremented for each variation.
             resolution (str): render resolution, must be a key of AVAILABLE_RESOLUTIONS.
+            content_class (str): can be "photo" or "art".
 
         Returns:
             tuple: a tuple of 3 elements:
@@ -270,7 +276,15 @@ class APIHandler:
         print(f"\n{' Starting generation ':=^50}")
         space_id = self.upload_to_space(api_key, scene_file)
         request, response = self.post_request(
-            api_key, space_id, prompt, hero, camera, image_count, seed, resolution
+            api_key,
+            space_id,
+            prompt,
+            hero,
+            camera,
+            image_count,
+            seed,
+            resolution,
+            content_class,
         )
         try:
             image_paths = []
