@@ -3,13 +3,14 @@ from random import randint
 
 import gradio as gr
 
-from api_manager import AVAILABLE_RESOLUTIONS, compose_2D_3D, upload_to_space
+from api_manager import AVAILABLE_RESOLUTIONS, APIHandler
 
 VERSION = "0.3.0 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
 
 
 def call_api(
+    api_handler: APIHandler,
     api_key,
     scene_file: str,
     prompt: str,
@@ -23,6 +24,7 @@ def call_api(
     Runs a generation job after checking input sanity.
 
     Args:
+        api_handler (APIHandler)
         api_key (str)
         scene_file (str): 3D scene file, expects a GLB file (.glb format, exported from Blender for instance)
         prompt (str): textual prompt describing what has to be seen in the result.
@@ -73,7 +75,7 @@ def call_api(
         raise gr.Error("Missing resolution.", title="Input Error")
     if prompt is None or len(prompt) == 0:
         raise gr.Error("Missing prompt.", title="Input Error")
-    return compose_2D_3D(
+    return api_handler.compose_2D_3D(
         api_key, scene_file, prompt, hero, camera, image_count, seed, resolution
     )
 
@@ -88,6 +90,7 @@ css = """
 with gr.Blocks(
     title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Theme", css=css
 ) as demo:
+    api_handler = gr.State(APIHandler())
     with gr.Row():
         with gr.Column(scale=2):
             result = gr.Gallery(
@@ -158,6 +161,7 @@ with gr.Blocks(
     generate.click(
         fn=call_api,
         inputs=[
+            api_handler,
             api_key_input,
             scene_file_input,
             prompt_input,
