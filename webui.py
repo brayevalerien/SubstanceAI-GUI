@@ -5,7 +5,7 @@ import gradio as gr
 
 from api_manager import AVAILABLE_RESOLUTIONS, AVAILABLE_CONTENTCLASSES, APIHandler
 
-VERSION = "0.3.0 (beta)"
+VERSION = "0.4.0 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
 
 
@@ -20,6 +20,7 @@ def call_api(
     seed: int,
     resolution: str,
     content_class: str,
+    style_image: str,
 ) -> tuple:
     """
     Runs a generation job after checking input sanity.
@@ -34,6 +35,8 @@ def call_api(
         image_count (int): number of variations to generate.
         seed (int): initial seed, will be incremented for each variation.
         resolution (str): render resolution, must be a key of AVAILABLE_RESOLUTIONS.
+        content_class (str): can be "photo" or "art".
+        style_image (str): path to the image file for style reference. Ignored if None.
 
     Returns:
         tuple: a tuple of 3 elements:
@@ -82,6 +85,11 @@ def call_api(
             f'Content class must be of [{", ".join(AVAILABLE_CONTENTCLASSES)}] (got {content_class}). Defaulting to "photo".'
         )
         content_class = "photo"
+    if (not style_image is None) and (not os.path.isfile(style_image)):
+        raise gr.Error(
+            "A style image has been provided but is invalid. Please check that the image still exists and that it can be read.",
+            title="Input Error",
+        )
     return api_handler.compose_2D_3D(
         api_key,
         scene_file,
@@ -92,6 +100,7 @@ def call_api(
         seed,
         resolution,
         content_class,
+        style_image,
     )
 
 
@@ -170,10 +179,9 @@ with gr.Blocks(
                     info="Type of the images to be generated.",
                     interactive=True,
                 )
-                gr.Markdown(
-                    "Please note that the style image is an upcoming feature and is **not implemented yet**. Uploading an image here will have no effect."
+                style_image_input = gr.Image(
+                    label="Style image", type="filepath", sources="upload"
                 )
-                gr.Image(label="Style image")
     with gr.Accordion(label="Data exchange (dev view)", open=False) as dev_view:
         with gr.Row():
             request_display = gr.JSON(label="Request", max_height=None)
@@ -192,6 +200,7 @@ with gr.Blocks(
             seed_input,
             resolution_input,
             content_class_input,
+            style_image_input,
         ],
         outputs=[result, request_display, response_display],
     )

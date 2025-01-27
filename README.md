@@ -21,7 +21,8 @@ Once you've installed the project, run `python webui.py` to start the UI. Follow
 4. Write the exact name of the hero object (your product) and the camera you want to use for rendering. Use the names that are used in the scene, otherwise the API will not be able to find your objects.
 5. Choose the image count and the seed
 6. Set your resolution (note that the resolution set in your scene will be ignored)
-7. Send the request by hitting the "Generate" button.
+7. Optionally, choose a content class (image style, can be "photo" or "art") and/or a style image.
+8. Send the request by hitting the "Generate" button.
 
 The generation takes from a few seconds to a couple of minutes and the generated image will appear in the main image frame in the middle of the UI.
 

@@ -130,34 +130,34 @@ class APIHandler:
             print(f"[Error {error_code}] {message}")  # debug
             raise gr.Error(message, title=f"Error {error_code}")
 
-    def upload_to_space(self, api_key: str, file_path: str) -> str:
+    def upload_to_space(self, api_key: str, scene_filepath: str, style_image_filepath: str=None) -> str:
         """
         Uploads content to Substance API space.
         Learn more at https://s3d.adobe.io/v1beta/docs#/paths/v1beta-spaces/post
 
         Args:
             api_key (str)
-            file_path (str): path to the local file to be uploaded to the Substance API.
+            scene_filepath (str): path to the local 3D scene file to be uploaded to the Substance API.
+            scene_filepath (str): path to the local style image to be uploaded to the Substance API. Defaults to None.
 
         Returns:
-            str: ID of the space where the file has been uploaded.
+            str: ID of the space where the files has been uploaded.
         """
-        file_hash = utils.hash_file(file_path)
+        file_hash = utils.hash_files([scene_filepath, style_image_filepath])
         if self.space_cache.exists(file_hash):
             print("Using an already existing space for this file.")
             return self.space_cache.get(file_hash).id
 
-        filename = os.path.basename(file_path)
-        files = {"filename": open(file_path, "rb")}
-        payload = {"name": filename}
+        filename = os.path.basename(scene_filepath)
+        files = {"3d_scene": open(scene_filepath, "rb")}
+        if not style_image_filepath is None:
+            files["style_image"] =  open(style_image_filepath, "rb")
         headers = {"Accept": "application/json", "Authorization": "Bearer " + api_key}
         print("Asking for space creation...")  # debug
-        response = requests.post(
-            API_SPACE_ENDPOINT, data=payload, files=files, headers=headers
-        )
+        response = requests.post(API_SPACE_ENDPOINT, files=files, headers=headers)
 
         if response.status_code == 201:
-            print("Space created successfully.")  # debug
+            print(f"Space created successfully at {response.json()["url"]}.")  # debug
             space_id = response.json()["id"]
             # add space to cache
             self.space_cache.add(
@@ -179,6 +179,7 @@ class APIHandler:
         seed: int,
         resolution: str,
         content_class: str,
+        style_image_name: str,
     ) -> tuple:
         """
         Given the various inputs, posts an API request and wait for the job to be finished. It returns the API response only if the job is finished successfully. The payload sent to the API is returned too.
@@ -193,6 +194,7 @@ class APIHandler:
             seed (int): initial seed, will be incremented for each variation.
             resolution (str): render resolution, must be a key of AVAILABLE_RESOLUTIONS.
             content_class (str): can be "photo" or "art".
+            style_image_name (str): name of the style image in the space (e.g. "style_image/mystyle.png"). Ignored if None.
 
         Returns:
             tuple: a couple of two dicts:
@@ -208,6 +210,8 @@ class APIHandler:
             "sources": [{"space": {"id": space_id}}],
             "contentClass": content_class,
         }
+        if not style_image_name is None:
+            payload["styleImage"] = style_image_name
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -252,6 +256,7 @@ class APIHandler:
         seed: int,
         resolution: str,
         content_class: str,
+        style_image: str,
     ) -> tuple:
         """
         Calls the Substance API compose 2D and 3D endpoint, with proper file and input management.
@@ -266,6 +271,7 @@ class APIHandler:
             seed (int): initial seed, will be incremented for each variation.
             resolution (str): render resolution, must be a key of AVAILABLE_RESOLUTIONS.
             content_class (str): can be "photo" or "art".
+            style_image (str): path to the image file for style reference. Ignored if None.
 
         Returns:
             tuple: a tuple of 3 elements:
@@ -274,7 +280,8 @@ class APIHandler:
                 dict: response json
         """
         print(f"\n{' Starting generation ':=^50}")
-        space_id = self.upload_to_space(api_key, scene_file)
+        space_id = self.upload_to_space(api_key, scene_file, style_image)
+        style_image_name = f"style_image/{os.path.basename(style_image)}" if style_image is not None else None
         request, response = self.post_request(
             api_key,
             space_id,
@@ -285,6 +292,7 @@ class APIHandler:
             seed,
             resolution,
             content_class,
+            style_image_name,
         )
         try:
             image_paths = []
