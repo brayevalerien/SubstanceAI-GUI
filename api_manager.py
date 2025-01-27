@@ -90,7 +90,7 @@ class SpaceCache:
             if not v.is_alive():
                 # shallow copy is ok since we remove the reference (hash) to the item. The SpaceDesc will be removed by the garbage collector.
                 data_copy = self.data.copy()
-                del data_copy[hash]
+                del data_copy[k]
                 self.data = data_copy
 
 
