@@ -3,7 +3,7 @@ from random import randint
 
 import gradio as gr
 
-from api_manager import AVAILABLE_RESOLUTIONS, APIHandler
+from api_manager import AVAILABLE_RESOLUTIONS, AVAILABLE_CONTENTCLASSES, APIHandler
 
 VERSION = "0.3.0 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
@@ -19,6 +19,7 @@ def call_api(
     image_count: int,
     seed: int,
     resolution: str,
+    content_class: str,
 ) -> tuple:
     """
     Runs a generation job after checking input sanity.
@@ -75,8 +76,22 @@ def call_api(
         raise gr.Error("Missing resolution.", title="Input Error")
     if prompt is None or len(prompt) == 0:
         raise gr.Error("Missing prompt.", title="Input Error")
+    content_class = content_class.lower()
+    if not content_class in AVAILABLE_CONTENTCLASSES:
+        gr.Warning(
+            f'Content class must be of [{", ".join(AVAILABLE_CONTENTCLASSES)}] (got {content_class}). Defaulting to "photo".'
+        )
+        content_class = "photo"
     return api_handler.compose_2D_3D(
-        api_key, scene_file, prompt, hero, camera, image_count, seed, resolution
+        api_key,
+        scene_file,
+        prompt,
+        hero,
+        camera,
+        image_count,
+        seed,
+        resolution,
+        content_class,
     )
 
 
@@ -149,6 +164,12 @@ with gr.Blocks(
                     interactive=True,
                 )
             with gr.Group():
+                content_class_input = gr.Dropdown(
+                    AVAILABLE_CONTENTCLASSES,
+                    label="Content class",
+                    info="Type of the images to be generated.",
+                    interactive=True,
+                )
                 gr.Markdown(
                     "Please note that the style image is an upcoming feature and is **not implemented yet**. Uploading an image here will have no effect."
                 )
@@ -170,6 +191,7 @@ with gr.Blocks(
             image_count_input,
             seed_input,
             resolution_input,
+            content_class_input,
         ],
         outputs=[result, request_display, response_display],
     )
