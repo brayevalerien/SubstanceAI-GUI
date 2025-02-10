@@ -157,7 +157,7 @@ class APIHandler:
         response = requests.post(API_SPACE_ENDPOINT, files=files, headers=headers)
 
         if response.status_code == 201:
-            print(f"Space created successfully at {response.json()["url"]}.")  # debug
+            print(f"Space created successfully at {response.json()['url']}.")  # debug
             space_id = response.json()["id"]
             # add space to cache
             self.space_cache.add(
