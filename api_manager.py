@@ -130,7 +130,9 @@ class APIHandler:
             print(f"[Error {error_code}] {message}")  # debug
             raise gr.Error(message, title=f"Error {error_code}")
 
-    def upload_to_space(self, api_key: str, scene_filepath: str, style_image_filepath: str=None) -> str:
+    def upload_to_space(
+        self, api_key: str, scene_filepath: str, style_image_filepath: str = None
+    ) -> str:
         """
         Uploads content to Substance API space.
         Learn more at https://s3d.adobe.io/v1beta/docs#/paths/v1beta-spaces/post
@@ -151,7 +153,7 @@ class APIHandler:
         filename = os.path.basename(scene_filepath)
         files = {"3d_scene": open(scene_filepath, "rb")}
         if not style_image_filepath is None:
-            files["style_image"] =  open(style_image_filepath, "rb")
+            files["style_image"] = open(style_image_filepath, "rb")
         headers = {"Accept": "application/json", "Authorization": "Bearer " + api_key}
         print("Asking for space creation...")  # debug
         response = requests.post(API_SPACE_ENDPOINT, files=files, headers=headers)
@@ -263,7 +265,7 @@ class APIHandler:
 
         Args:
             api_key (str)
-            scene_file (str): 3D scene file, expects a GLB file (.glb format, exported from Blender for instance)
+            scene_file (str): 3D scene file, expects a GLB or USDz file (.glb or .usdz format, exported from Blender for instance)
             prompt (str): textual prompt describing what has to be seen in the result.
             hero (str): name of the hero object in the scene file (this object will be left untouched by the AI).
             camera (str): name of a camera in the scene file.
@@ -281,7 +283,11 @@ class APIHandler:
         """
         print(f"\n{' Starting generation ':=^50}")
         space_id = self.upload_to_space(api_key, scene_file, style_image)
-        style_image_name = f"style_image/{os.path.basename(style_image)}" if style_image is not None else None
+        style_image_name = (
+            f"style_image/{os.path.basename(style_image)}"
+            if style_image is not None
+            else None
+        )
         request, response = self.post_request(
             api_key,
             space_id,

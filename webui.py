@@ -28,7 +28,7 @@ def call_api(
     Args:
         api_handler (APIHandler)
         api_key (str)
-        scene_file (str): 3D scene file, expects a GLB file (.glb format, exported from Blender for instance)
+        scene_file (str): 3D scene file, expects a GLB or USDZ file (.glb or .usdz format, exported from Blender for instance)
         prompt (str): textual prompt describing what has to be seen in the result.
         hero (str): name of the hero object in the scene file (this object will be left untouched by the AI).
         camera (str): name of a camera in the scene file.
@@ -51,18 +51,19 @@ def call_api(
         )
     if scene_file is None:
         raise gr.Error(
-            "Missing scene file, please load a GLB file.", title="Input Error"
+            "Missing scene file, please load a GLB or USDZ file.", title="Input Error"
         )
     if not scene_file.split(".")[-1].lower() in ["glb", "fbx", "usdz"]:
         raise gr.Error(
-            "Invalid scene file format, please load a GLB file.", title="Input Error"
+            "Invalid scene file format, please load a GLB or USDZ file.",
+            title="Input Error",
         )
-    if hero is None:
+    if hero is None or len(hero) == 0:
         raise gr.Error(
             "Missing hero object, please add the exact name of the hero object in the 3D scene.",
             title="Input Error",
         )
-    if camera is None:
+    if camera is None or len(camera) == 0:
         raise gr.Error(
             "Missing camera, please add the exact name of the camera in the 3D scene.",
             title="Input Error",
