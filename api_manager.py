@@ -55,9 +55,7 @@ class SpaceCache:
 
     def get(self, hash: str) -> SpaceDesc:
         if not hash in self.data:
-            raise KeyError(
-                f"No space associated with hash {hash} stored in this SpaceCache."
-            )
+            raise KeyError(f"No space associated with hash {hash} stored in this SpaceCache.")
         return self.data[hash]
 
     def add(self, hash: str, space_desc: SpaceDesc) -> bool:
@@ -130,9 +128,7 @@ class APIHandler:
             print(f"[Error {error_code}] {message}")  # debug
             raise gr.Error(message, title=f"Error {error_code}")
 
-    def upload_to_space(
-        self, api_key: str, scene_filepath: str, style_image_filepath: str = None
-    ) -> str:
+    def upload_to_space(self, api_key: str, scene_filepath: str, style_image_filepath: str = None) -> str:
         """
         Uploads content to Substance API space.
         Learn more at https://s3d.adobe.io/v1beta/docs#/paths/v1beta-spaces/post
@@ -182,6 +178,7 @@ class APIHandler:
         resolution: str,
         content_class: str,
         style_image_name: str,
+        style_image_strenght: int,
     ) -> tuple:
         """
         Given the various inputs, posts an API request and wait for the job to be finished. It returns the API response only if the job is finished successfully. The payload sent to the API is returned too.
@@ -197,6 +194,7 @@ class APIHandler:
             resolution (str): render resolution, must be a key of AVAILABLE_RESOLUTIONS.
             content_class (str): can be "photo" or "art".
             style_image_name (str): name of the style image in the space (e.g. "style_image/mystyle.png"). Ignored if None.
+            style_image_strength (int): strength of the style reference image over the generation. Ignored if style_image_name is None.
 
         Returns:
             tuple: a couple of two dicts:
@@ -214,6 +212,7 @@ class APIHandler:
         }
         if not style_image_name is None:
             payload["styleImage"] = style_image_name
+            payload["styleImageStrength"] = style_image_strenght
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -233,9 +232,7 @@ class APIHandler:
             job_response = requests.get(f"{API_JOB_ENDPOINT}/{job_id}", headers=headers)
             status = job_response.json()["status"]
             if status in ["not_started", "running"]:
-                print(
-                    f"Job status: {status} (fetching status again in {retry_after}s.)"
-                )  # debug
+                print(f"Job status: {status} (fetching status again in {retry_after}s.)")  # debug
             elif status == "succeeded":
                 return payload, job_response.json()
             elif status == "failed":
@@ -243,9 +240,7 @@ class APIHandler:
                 print(f"[Error] {api_error_message}")  # debug
                 gr.Error(f"2D/3D composition job failed: {api_error_message}")
                 return payload, job_response.json()
-            sleep(
-                int(retry_after)
-            )  # use callback instead when API implements it to stay asynchronous
+            sleep(int(retry_after))  # use callback instead when API implements it to stay asynchronous
 
     def compose_2D_3D(
         self,
@@ -259,6 +254,7 @@ class APIHandler:
         resolution: str,
         content_class: str,
         style_image: str,
+        style_image_strength: int,
     ) -> tuple:
         """
         Calls the Substance API compose 2D and 3D endpoint, with proper file and input management.
@@ -274,6 +270,7 @@ class APIHandler:
             resolution (str): render resolution, must be a key of AVAILABLE_RESOLUTIONS.
             content_class (str): can be "photo" or "art".
             style_image (str): path to the image file for style reference. Ignored if None.
+            style_image_strength (int): strength of the style reference image over the generation. Ignored if style_image is None.
 
         Returns:
             tuple: a tuple of 3 elements:
@@ -283,11 +280,7 @@ class APIHandler:
         """
         print(f"\n{' Starting generation ':=^50}")
         space_id = self.upload_to_space(api_key, scene_file, style_image)
-        style_image_name = (
-            f"style_image/{os.path.basename(style_image)}"
-            if style_image is not None
-            else None
-        )
+        style_image_name = f"style_image/{os.path.basename(style_image)}" if style_image is not None else None
         request, response = self.post_request(
             api_key,
             space_id,
@@ -299,6 +292,7 @@ class APIHandler:
             resolution,
             content_class,
             style_image_name,
+            style_image_strength,
         )
         try:
             image_paths = []

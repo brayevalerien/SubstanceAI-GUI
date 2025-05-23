@@ -5,7 +5,7 @@ import gradio as gr
 
 from api_manager import AVAILABLE_RESOLUTIONS, AVAILABLE_CONTENTCLASSES, APIHandler
 
-VERSION = "0.4.0 (beta)"
+VERSION = "0.4.1 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
 
 
@@ -21,6 +21,7 @@ def call_api(
     resolution: str,
     content_class: str,
     style_image: str,
+    style_image_strength: int,
 ) -> tuple:
     """
     Runs a generation job after checking input sanity.
@@ -37,6 +38,7 @@ def call_api(
         resolution (str): render resolution, must be a key of AVAILABLE_RESOLUTIONS.
         content_class (str): can be "photo" or "art".
         style_image (str): path to the image file for style reference. Ignored if None.
+        style_image_strength (int): strength of the style reference image over the generation. Ignored if style_image is None.
 
     Returns:
         tuple: a tuple of 3 elements:
@@ -44,15 +46,13 @@ def call_api(
             dict: request json
             dict: response json
     """
-    if api_key is None:
+    if api_key is None or len(api_key) == 0:
         raise gr.Error(
             "Missing API key, please log in at https://s3d.adobe.io/ to get yours.",
             title="Input Error",
         )
     if scene_file is None:
-        raise gr.Error(
-            "Missing scene file, please load a GLB or USDZ file.", title="Input Error"
-        )
+        raise gr.Error("Missing scene file, please load a GLB or USDZ file.", title="Input Error")
     if not scene_file.split(".")[-1].lower() in ["glb", "fbx", "usdz"]:
         raise gr.Error(
             "Invalid scene file format, please load a GLB or USDZ file.",
@@ -73,9 +73,7 @@ def call_api(
     if seed is None:
         raise gr.Error("Missing seed.", title="Input Error")
     elif seed == -1:
-        seed = randint(
-            0, 2**31 - 1
-        )  # limiting seed range to positive int32 but that should be enough...
+        seed = randint(0, 2**31 - 1)  # limiting seed range to positive int32 but that should be enough...
     if not resolution:
         raise gr.Error("Missing resolution.", title="Input Error")
     if prompt is None or len(prompt) == 0:
@@ -102,6 +100,7 @@ def call_api(
         resolution,
         content_class,
         style_image,
+        style_image_strength,
     )
 
 
@@ -112,9 +111,7 @@ css = """
 }
 """
 
-with gr.Blocks(
-    title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Theme", css=css
-) as demo:
+with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Theme", css=css) as demo:
     api_handler = gr.State(APIHandler())
     with gr.Row():
         with gr.Column(scale=2):
@@ -160,12 +157,8 @@ with gr.Blocks(
                     type="password",
                 )
             with gr.Group():
-                image_count_input = gr.Slider(
-                    label="Image count", minimum=1, maximum=4, step=1, interactive=True
-                )
-                seed_input = gr.Number(
-                    label="Seed", info="Set to -1 for random seed", minimum=-1
-                )
+                image_count_input = gr.Slider(label="Image count", minimum=1, maximum=4, step=1, interactive=True)
+                seed_input = gr.Number(label="Seed", info="Set to -1 for random seed", minimum=-1)
             with gr.Group():
                 resolution_input = gr.Radio(
                     label="Resolution",
@@ -180,8 +173,13 @@ with gr.Blocks(
                     info="Type of the images to be generated.",
                     interactive=True,
                 )
-                style_image_input = gr.Image(
-                    label="Style image", type="filepath", sources="upload"
+                style_image_input = gr.Image(label="Style image", type="filepath", sources="upload")
+                style_image_strength_input = gr.Slider(
+                    label="Style image strength",
+                    minimum=0,
+                    maximum=100,
+                    value=70,
+                    interactive=True,
                 )
     with gr.Accordion(label="Data exchange (dev view)", open=False) as dev_view:
         with gr.Row():
@@ -202,6 +200,7 @@ with gr.Blocks(
             resolution_input,
             content_class_input,
             style_image_input,
+            style_image_strength_input,
         ],
         outputs=[result, request_display, response_display],
     )
