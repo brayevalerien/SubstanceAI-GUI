@@ -25,6 +25,11 @@ AVAILABLE_RESOLUTIONS = {
     "1024 × 1024 | 1:1": {"width": 1024, "height": 1024},
 }
 AVAILABLE_CONTENTCLASSES = ["photo", "art"]
+AVAILABLE_MODELS = {
+    "Firefly Image 3": "image3_fast",
+    "Firefly Image 4": "image4_standard",
+    "Firefly Image 4 Ultra": "image4_ultra",
+}
 
 
 class SpaceDesc:
@@ -179,6 +184,7 @@ class APIHandler:
         content_class: str,
         style_image_name: str,
         style_image_strenght: int,
+        model_id: str,
     ) -> tuple:
         """
         Given the various inputs, posts an API request and wait for the job to be finished. It returns the API response only if the job is finished successfully. The payload sent to the API is returned too.
@@ -195,6 +201,7 @@ class APIHandler:
             content_class (str): can be "photo" or "art".
             style_image_name (str): name of the style image in the space (e.g. "style_image/mystyle.png"). Ignored if None.
             style_image_strength (int): strength of the style reference image over the generation. Ignored if style_image_name is None.
+            model_id (str): id of the image generation model.
 
         Returns:
             tuple: a couple of two dicts:
@@ -209,6 +216,7 @@ class APIHandler:
             "size": AVAILABLE_RESOLUTIONS[resolution],
             "sources": [{"space": {"id": space_id}}],
             "contentClass": content_class,
+            "modelVersion": model_id,
         }
         if not style_image_name is None:
             payload["styleImage"] = style_image_name
@@ -255,6 +263,7 @@ class APIHandler:
         content_class: str,
         style_image: str,
         style_image_strength: int,
+        model_name: str,
     ) -> tuple:
         """
         Calls the Substance API compose 2D and 3D endpoint, with proper file and input management.
@@ -271,6 +280,7 @@ class APIHandler:
             content_class (str): can be "photo" or "art".
             style_image (str): path to the image file for style reference. Ignored if None.
             style_image_strength (int): strength of the style reference image over the generation. Ignored if style_image is None.
+            model_name (str): name of the image generation model.
 
         Returns:
             tuple: a tuple of 3 elements:
@@ -281,6 +291,7 @@ class APIHandler:
         print(f"\n{' Starting generation ':=^50}")
         space_id = self.upload_to_space(api_key, scene_file, style_image)
         style_image_name = f"style_image/{os.path.basename(style_image)}" if style_image is not None else None
+        model_id = AVAILABLE_MODELS[model_name]
         request, response = self.post_request(
             api_key,
             space_id,
@@ -293,6 +304,7 @@ class APIHandler:
             content_class,
             style_image_name,
             style_image_strength,
+            model_id,
         )
         try:
             image_paths = []
