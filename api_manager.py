@@ -37,7 +37,7 @@ class SpaceDesc:
     A class describing a space.
     """
 
-    def __init__(self, name: str, id: str, creation_time: datetime, lifetime: int = 24):
+    def __init__(self, name: str, id: str, creation_time: datetime, lifetime: int = 6):
         self.name = name
         self.id = id
         self.creation_time = creation_time
@@ -45,7 +45,7 @@ class SpaceDesc:
 
     def is_alive(self) -> bool:
         delta = datetime.now() - self.creation_time
-        hours = delta.days * 24 + delta.seconds // 3600
+        hours = delta.days // 24 + delta.seconds // 3600
         return hours < self.lifetime
 
 
