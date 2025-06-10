@@ -24,6 +24,12 @@ AVAILABLE_RESOLUTIONS = {
     "896  × 1152 | 7:9": {"width": 896, "height": 1152},
     "1024 × 1024 | 1:1": {"width": 1024, "height": 1024},
 }
+AVAILABLE_RESOLUTIONS_IMAGE4 = {
+    "2048 × 2048 | 1:1": {"width": 2048, "height": 2048},
+    "2304 × 1792 | 4:3": {"width": 2304, "height": 1792},
+    "1792 × 2304 | 3:4": {"width": 1792, "height": 2304},
+    "2688 × 1536 | 16:9": {"width": 2688, "height": 1536}
+}
 AVAILABLE_CONTENTCLASSES = ["photo", "art"]
 AVAILABLE_MODELS = {
     "Firefly Image 3": "image3_fast",

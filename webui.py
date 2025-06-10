@@ -3,9 +3,15 @@ from random import randint
 
 import gradio as gr
 
-from api_manager import AVAILABLE_CONTENTCLASSES, AVAILABLE_RESOLUTIONS, AVAILABLE_MODELS, APIHandler
+from api_manager import (
+    AVAILABLE_CONTENTCLASSES,
+    AVAILABLE_RESOLUTIONS,
+    AVAILABLE_RESOLUTIONS_IMAGE4,
+    AVAILABLE_MODELS,
+    APIHandler,
+)
 
-VERSION = "0.5.0 (beta)"
+VERSION = "0.5.1 (beta)"
 TITLE = f"SubstanceAI GUI v{VERSION}"
 
 
@@ -54,14 +60,18 @@ def call_api(
             title="Input Error",
         )
     if scene_file is None:
-        raise gr.Error("Missing scene file, please load a GLB or USDZ file.", title="Input Error")
+        raise gr.Error(
+            "Missing scene file, please load a GLB or USDZ file.", title="Input Error"
+        )
     if scene_file.split(".")[-1].lower() not in ["glb", "fbx", "usdz"]:
         raise gr.Error(
             "Invalid scene file format, please load a GLB or USDZ file.",
             title="Input Error",
         )
     elif scene_file.split(".")[-1].lower() != "usdz":
-        gr.Warning("The scene you uploaded is not in USDz format, area lights might not be processed as expected.")
+        gr.Warning(
+            "The scene you uploaded is not in USDz format, area lights might not be processed as expected."
+        )
     if hero is None or len(hero) == 0:
         raise gr.Error(
             "Missing hero object, please add the exact name of the hero object in the 3D scene.",
@@ -77,7 +87,9 @@ def call_api(
     if seed is None:
         raise gr.Error("Missing seed.", title="Input Error")
     elif seed == -1:
-        seed = randint(0, 2**31 - 1)  # limiting seed range to positive int32 but that should be enough...
+        seed = randint(
+            0, 2**31 - 1
+        )  # limiting seed range to positive int32 but that should be enough...
     if not resolution:
         raise gr.Error("Missing resolution.", title="Input Error")
     if prompt is None or len(prompt) == 0:
@@ -95,7 +107,8 @@ def call_api(
         )
     if model_name not in AVAILABLE_MODELS:
         raise gr.Error(
-            f"An invalid model was selected. Only {', '.join(AVAILABLE_MODELS)} are available.", title="Input Error"
+            f"An invalid model was selected. Only {', '.join(AVAILABLE_MODELS)} are available.",
+            title="Input Error",
         )
     return api_handler.compose_2D_3D(
         api_key,
@@ -120,7 +133,9 @@ css = """
 }
 """
 
-with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Theme", css=css) as demo:
+with gr.Blocks(
+    title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Theme", css=css
+) as demo:
     api_handler = gr.State(APIHandler())
     with gr.Row():
         with gr.Column(scale=2):
@@ -166,9 +181,15 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Th
                     type="password",
                 )
             with gr.Group():
-                model_input = gr.Dropdown(AVAILABLE_MODELS, label="Image generation model", interactive=True)
-                image_count_input = gr.Slider(label="Image count", minimum=1, maximum=4, step=1, interactive=True)
-                seed_input = gr.Number(label="Seed", info="Set to -1 for random seed", minimum=-1)
+                model_input = gr.Dropdown(
+                    AVAILABLE_MODELS, label="Image generation model", interactive=True
+                )
+                image_count_input = gr.Slider(
+                    label="Image count", minimum=1, maximum=4, step=1, interactive=True
+                )
+                seed_input = gr.Number(
+                    label="Seed", info="Set to -1 for random seed", minimum=-1
+                )
 
                 def update_for_image4ultra(model: str):
                     model_id = AVAILABLE_MODELS[model]
@@ -181,6 +202,25 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Th
                             step=1,
                             value=1,
                             interactive=False,
+                        ), gr.Radio(
+                            label="Resolution",
+                            choices=AVAILABLE_RESOLUTIONS_IMAGE4.keys(),
+                            value=list(AVAILABLE_RESOLUTIONS_IMAGE4.keys())[0],
+                            interactive=True,
+                        )
+                    elif model_id == "image4_standard":
+                        return gr.Slider(
+                            label="Image count",
+                            info="",
+                            minimum=1,
+                            maximum=4,
+                            step=1,
+                            interactive=True,
+                        ), gr.Radio(
+                            label="Resolution",
+                            choices=AVAILABLE_RESOLUTIONS_IMAGE4.keys(),
+                            value=list(AVAILABLE_RESOLUTIONS_IMAGE4.keys())[0],
+                            interactive=True,
                         )
                     else:
                         return gr.Slider(
@@ -190,9 +230,12 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Th
                             maximum=4,
                             step=1,
                             interactive=True,
+                        ), gr.Radio(
+                            label="Resolution",
+                            choices=AVAILABLE_RESOLUTIONS.keys(),
+                            value=list(AVAILABLE_RESOLUTIONS.keys())[0],
+                            interactive=True,
                         )
-
-                model_input.change(fn=update_for_image4ultra, inputs=model_input, outputs=image_count_input)
 
             with gr.Group():
                 resolution_input = gr.Radio(
@@ -201,6 +244,13 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Th
                     value=list(AVAILABLE_RESOLUTIONS.keys())[0],
                     interactive=True,
                 )
+
+            model_input.change(
+                fn=update_for_image4ultra,
+                inputs=model_input,
+                outputs=[image_count_input, resolution_input],
+            )
+
             with gr.Group():
                 content_class_input = gr.Dropdown(
                     AVAILABLE_CONTENTCLASSES,
@@ -208,7 +258,9 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Th
                     info="Type of the images to be generated.",
                     interactive=True,
                 )
-                style_image_input = gr.Image(label="Style image", type="filepath", sources="upload")
+                style_image_input = gr.Image(
+                    label="Style image", type="filepath", sources="upload"
+                )
                 style_image_strength_input = gr.Slider(
                     label="Style image strength",
                     minimum=0,
