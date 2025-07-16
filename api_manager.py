@@ -59,7 +59,7 @@ class SpaceCache:
         self.data = {}
 
     def get(self, hash: str) -> SpaceDesc:
-        if not hash in self.data:
+        if hash not in self.data:
             raise KeyError(f"No space associated with hash {hash} stored in this SpaceCache.")
         return self.data[hash]
 
@@ -153,7 +153,7 @@ class APIHandler:
 
         filename = os.path.basename(scene_filepath)
         files = {"3d_scene": open(scene_filepath, "rb")}
-        if not style_image_filepath is None:
+        if style_image_filepath is not None:
             files["style_image"] = open(style_image_filepath, "rb")
         headers = {"Accept": "application/json", "Authorization": "Bearer " + api_key}
         print("Asking for space creation...")  # debug
@@ -218,7 +218,7 @@ class APIHandler:
             "contentClass": content_class,
             "modelVersion": model_id,
         }
-        if not style_image_name is None:
+        if style_image_name is not None:
             payload["styleImage"] = style_image_name
             payload["styleImageStrength"] = style_image_strenght
         headers = {
@@ -316,7 +316,7 @@ class APIHandler:
                     "Authorization": "Bearer " + api_key,
                 }
                 image_data = requests.get(image_url, headers=headers).content
-                image_paths.append(utils.save_image(image_data, f"./output/"))
+                image_paths.append(utils.save_image(image_data, "./output/"))
         except KeyError:
             image_paths = ["./assets/error.png"]
         print(f"{'':=^50}\n")
