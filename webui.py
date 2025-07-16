@@ -9,9 +9,10 @@ from api_manager import (
     AVAILABLE_RESOLUTIONS_IMAGE4,
     AVAILABLE_MODELS,
     APIHandler,
+    get_bearer_token,
 )
 
-VERSION = "0.5.1 (beta)"
+VERSION = "1.0.0"
 TITLE = f"SubstanceAI GUI v{VERSION}"
 
 
@@ -56,22 +57,18 @@ def call_api(
     """
     if api_key is None or len(api_key) == 0:
         raise gr.Error(
-            "Missing API key, please log in at https://s3d.adobe.io/ to get yours.",
+            "Missing credentials, please contact your administrator to get yours.",
             title="Input Error",
         )
     if scene_file is None:
-        raise gr.Error(
-            "Missing scene file, please load a GLB or USDZ file.", title="Input Error"
-        )
+        raise gr.Error("Missing scene file, please load a GLB or USDZ file.", title="Input Error")
     if scene_file.split(".")[-1].lower() not in ["glb", "fbx", "usdz"]:
         raise gr.Error(
             "Invalid scene file format, please load a GLB or USDZ file.",
             title="Input Error",
         )
     elif scene_file.split(".")[-1].lower() != "usdz":
-        gr.Warning(
-            "The scene you uploaded is not in USDz format, area lights might not be processed as expected."
-        )
+        gr.Warning("The scene you uploaded is not in USDz format, area lights might not be processed as expected.")
     if hero is None or len(hero) == 0:
         raise gr.Error(
             "Missing hero object, please add the exact name of the hero object in the 3D scene.",
@@ -87,9 +84,7 @@ def call_api(
     if seed is None:
         raise gr.Error("Missing seed.", title="Input Error")
     elif seed == -1:
-        seed = randint(
-            0, 2**31 - 1
-        )  # limiting seed range to positive int32 but that should be enough...
+        seed = randint(0, 2**31 - 1)  # limiting seed range to positive int32 but that should be enough...
     if not resolution:
         raise gr.Error("Missing resolution.", title="Input Error")
     if prompt is None or len(prompt) == 0:
@@ -133,10 +128,12 @@ css = """
 }
 """
 
-with gr.Blocks(
-    title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Theme", css=css
-) as demo:
+with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Theme", css=css) as demo:
+    import dotenv
+
+    dotenv.load_dotenv()
     api_handler = gr.State(APIHandler())
+
     with gr.Row():
         with gr.Column(scale=2):
             result = gr.Gallery(
@@ -174,22 +171,23 @@ with gr.Blocks(
         with gr.Column(variant="panel") as settings_column:
             gr.Markdown("# Settings")
             with gr.Group():
+                client_id, client_secret = os.getenv("CLIENT_ID"), os.getenv("CLIENT_SECRET")
+                using_env_credentials = bool(client_id and client_secret)
+                value = get_bearer_token(client_id, client_secret) if using_env_credentials else None
                 api_key_input = gr.Textbox(
-                    label="API key",
-                    info="Get your API key by logging in at https://s3d.adobe.io/",
+                    label="Bearer token",
+                    info="Authentificate here or set the CLIENT_ID and CLIENT_SECRET environment variables and restart the app.",
                     max_lines=1,
                     type="password",
+                    visible=(not using_env_credentials),
+                    placeholder="eyJh...",
+                    value=value,
                 )
+
             with gr.Group():
-                model_input = gr.Dropdown(
-                    AVAILABLE_MODELS, label="Image generation model", interactive=True
-                )
-                image_count_input = gr.Slider(
-                    label="Image count", minimum=1, maximum=4, step=1, interactive=True
-                )
-                seed_input = gr.Number(
-                    label="Seed", info="Set to -1 for random seed", minimum=-1
-                )
+                model_input = gr.Dropdown(AVAILABLE_MODELS, label="Image generation model", interactive=True)
+                image_count_input = gr.Slider(label="Image count", minimum=1, maximum=4, step=1, interactive=True)
+                seed_input = gr.Number(label="Seed", info="Set to -1 for random seed", minimum=-1)
 
                 def update_for_image4ultra(model: str):
                     model_id = AVAILABLE_MODELS[model]
@@ -258,9 +256,7 @@ with gr.Blocks(
                     info="Type of the images to be generated.",
                     interactive=True,
                 )
-                style_image_input = gr.Image(
-                    label="Style image", type="filepath", sources="upload"
-                )
+                style_image_input = gr.Image(label="Style image", type="filepath", sources="upload")
                 style_image_strength_input = gr.Slider(
                     label="Style image strength",
                     minimum=0,

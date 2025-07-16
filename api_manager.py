@@ -8,12 +8,12 @@ import requests
 import utils
 
 API_URL = "https://s3d.adobe.io"
-API_SPACE_ENDPOINT = f"{API_URL}/v1beta/spaces"
-API_COMPOSE_ENDPOINT = f"{API_URL}/v1beta/3dscenes/compose"
-API_JOB_ENDPOINT = f"{API_URL}/v1beta/jobs/"
+API_SPACE_ENDPOINT = f"{API_URL}/v1/spaces"
+API_COMPOSE_ENDPOINT = f"{API_URL}/v1/composites/compose"
+API_JOB_ENDPOINT = f"{API_URL}/v1/jobs/"
 
 # Valid resolutions for the Substance API, see:
-# https://s3d.adobe.io/v1beta/docs#/paths/v1beta-3dscenes-compose/post#request-body
+# https://s3d.adobe.io/docs#/operations/v1/composites/compose#request-body
 AVAILABLE_RESOLUTIONS = {
     "2048 × 2048 | 1:1": {"width": 2048, "height": 2048},
     "2304 × 1792 | 4:3": {"width": 2304, "height": 1792},
@@ -28,7 +28,7 @@ AVAILABLE_RESOLUTIONS_IMAGE4 = {
     "2048 × 2048 | 1:1": {"width": 2048, "height": 2048},
     "2304 × 1792 | 4:3": {"width": 2304, "height": 1792},
     "1792 × 2304 | 3:4": {"width": 1792, "height": 2304},
-    "2688 × 1536 | 16:9": {"width": 2688, "height": 1536}
+    "2688 × 1536 | 16:9": {"width": 2688, "height": 1536},
 }
 AVAILABLE_CONTENTCLASSES = ["photo", "art"]
 AVAILABLE_MODELS = {
@@ -36,6 +36,38 @@ AVAILABLE_MODELS = {
     "Firefly Image 4": "image4_standard",
     "Firefly Image 4 Ultra": "image4_ultra",
 }
+
+
+def get_bearer_token(client_id: str, client_secret: str) -> str:
+    """
+    Generates a new Bearer token from client credentials using the Adobe login API.
+
+    Args:
+        client_id (str)
+        client_secret (str)
+
+    Raises:
+        gr.Error: invalid client credentials
+
+    Returns:
+        str: the generated Bearer token
+    """
+    assert client_id and client_secret, "Cannot authentificate if the client ID or secret is None"
+    url = "https://ims-na1.adobelogin.com/ims/token/v3"
+    payload = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "openid, AdobeID, firefly_api, ff_apis, read_organizations, substance3d_api.jobs.create, email, profile, substance3d_api.spaces.create",
+    }
+    headers = {"content-type": "application/x-www-form-urlencoded"}
+    response = requests.post(url, data=payload, headers=headers)
+    if response.status_code == 200:
+        return response.json()["access_token"]
+    raise gr.Error(
+        f"Could not authentificate: {response.json()['error']}\nPlease update CLIENT_ID and CLIENT_SECRET env variables and restart the app.",
+        title=f"Error {response.status_code}",
+    )
 
 
 class SpaceDesc:
@@ -106,8 +138,8 @@ class SpaceCache:
 
 class APIHandler:
     def __init__(self):
-        # Note: we don't store the API key here since it currently dies after 24 hours. API key needs to be passed to the functions of the API handler instead.
-        # When Substance AI GUI gets released, the API key will likely have a longer lifetime, which will make it possible to store it here by simply passing it during initialization.
+        # Note: we don't store the API credentials here since it currently dies after 86399 seconds. API credentials needs to be passed to the functions of the API handler instead.
+        # If client credentials are given, we can store them in the browser, that is not implemented yet.
         self.space_cache = SpaceCache()
 
     def handle_error(self, error_code: int):

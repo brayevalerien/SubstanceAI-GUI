@@ -1,5 +1,5 @@
 # SubstanceAI-GUI
-A gradio-based UI for the private beta test of the Adobe Substance API, focusing on the "Compose generative 2D content with 3D scenes" endpoint.
+A gradio-based UI for accessing the Adobe Substance 3D API, focusing on the "Generate 3D Object Composite" endpoint.
 
 ![Screenshot of the UI](./assets/screenshot.png)
 
@@ -15,7 +15,7 @@ Follow these steps to install SubstanceAI GUI:
 
 ## Usage
 Once you've installed the project, run `python webui.py` to start the UI. Follow these steps to prepare and send your request to the Substance API:
-1. Add your API key. You can get your key by logging in [here](https://s3d.adobe.io/v1beta/docs#/) if you are a part of the private Substance API beta test.
+1. Add your Bearer token if you aren't using Client credentials. If you are using Client credentials (`client_id` and `client_secret`), set the `CLIENT_ID` and the `CLIENT_SECRET` environment variables or create a `.env` file, and restart the application.
 2. Load a 3D scene. **IMPORTANT:** Your scene must have been exported either as a `.usdz` (best) or a `.glb` file
 3. Write a prompt
 4. Write the exact name of the hero object (your product) and the camera you want to use for rendering. Use the names that are used in the scene, otherwise the API will not be able to find your objects.
