@@ -223,6 +223,8 @@ class APIHandler:
         style_image_name: str,
         style_image_strenght: int,
         model_id: str,
+        lighting_seed: int,
+        enable_groundplane: bool,
     ) -> tuple:
         """
         Given the various inputs, posts an API request and wait for the job to be finished. It returns the API response only if the job is finished successfully. The payload sent to the API is returned too.
@@ -240,6 +242,8 @@ class APIHandler:
             style_image_name (str): name of the style image in the space (e.g. "style_image/mystyle.png"). Ignored if None.
             style_image_strength (int): strength of the style reference image over the generation. Ignored if style_image_name is None.
             model_id (str): id of the image generation model.
+            lighting_seed (int): 
+            enable_groundplane (bool): enable the auto generated groundplane under the hero asset.
 
         Returns:
             tuple: a couple of two dicts:
@@ -255,6 +259,9 @@ class APIHandler:
             "sources": [{"space": {"id": space_id}}],
             "contentClass": content_class,
             "modelVersion": model_id,
+            "enableGroundPlane": True,
+            "lightingSeeds": [lighting_seed + i for i in range(image_count)],
+            "enableGroundPlane": enable_groundplane,
         }
         if style_image_name is not None:
             payload["styleImage"] = style_image_name
@@ -302,6 +309,8 @@ class APIHandler:
         style_image: str,
         style_image_strength: int,
         model_name: str,
+        lighting_seed: int,
+        enable_groundplane: bool,
     ) -> tuple:
         """
         Calls the Substance API compose 2D and 3D endpoint, with proper file and input management.
@@ -319,6 +328,8 @@ class APIHandler:
             style_image (str): path to the image file for style reference. Ignored if None.
             style_image_strength (int): strength of the style reference image over the generation. Ignored if style_image is None.
             model_name (str): name of the image generation model.
+            lighting_seed (int): initial seed, will be incremented for each variation.
+            enable_groundplane (bool): enable the auto generated groundplane under the hero asset.
 
         Returns:
             tuple: a tuple of 3 elements:
@@ -343,6 +354,8 @@ class APIHandler:
             style_image_name,
             style_image_strength,
             model_id,
+            lighting_seed,
+            enable_groundplane,
         )
         try:
             image_paths = []

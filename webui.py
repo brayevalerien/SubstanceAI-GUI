@@ -30,6 +30,8 @@ def call_api(
     style_image: str,
     style_image_strength: int,
     model_name: str,
+    lighting_seed: int,
+    enable_groundplane: bool,
 ) -> tuple:
     """
     Runs a generation job after checking input sanity.
@@ -48,6 +50,8 @@ def call_api(
         style_image (str): path to the image file for style reference. Ignored if None.
         style_image_strength (int): strength of the style reference image over the generation. Ignored if style_image is None.
         model_name (str): name of the image generation model.
+        lighting_seed (int): initial seed, will be incremented for each variation.
+        enable_groundplane (bool): enable the auto generated groundplane under the hero asset.
 
     Returns:
         tuple: a tuple of 3 elements:
@@ -84,7 +88,11 @@ def call_api(
     if seed is None:
         raise gr.Error("Missing seed.", title="Input Error")
     elif seed == -1:
-        seed = randint(0, 2**31 - 1)  # limiting seed range to positive int32 but that should be enough...
+        seed = randint(0, 2**31 - 1 - image_count)  # limiting seed range to positive int32 but that should be enough...
+    if lighting_seed is None:
+        raise gr.Error("Missing seed.", title="Input Error")
+    elif lighting_seed == -1:
+        lighting_seed = randint(0, 2**31 - 1 - image_count)  # limiting seed range to positive int32 but that should be enough...
     if not resolution:
         raise gr.Error("Missing resolution.", title="Input Error")
     if prompt is None or len(prompt) == 0:
@@ -105,6 +113,7 @@ def call_api(
             f"An invalid model was selected. Only {', '.join(AVAILABLE_MODELS)} are available.",
             title="Input Error",
         )
+    
     return api_handler.compose_2D_3D(
         api_key,
         scene_file,
@@ -118,6 +127,8 @@ def call_api(
         style_image,
         style_image_strength,
         model_name,
+        lighting_seed,
+        enable_groundplane
     )
 
 
@@ -188,6 +199,8 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Th
                 model_input = gr.Dropdown(AVAILABLE_MODELS, label="Image generation model", interactive=True)
                 image_count_input = gr.Slider(label="Image count", minimum=1, maximum=4, step=1, interactive=True)
                 seed_input = gr.Number(label="Seed", info="Set to -1 for random seed", minimum=-1)
+                lighting_seed_input = gr.Number(label="Lighting seed", info="Set to -1 for random seed", minimum=-1)
+                enable_groundplane_input = gr.Checkbox(value=False, label="Enable groundplane", info="Check to auto generate a plane under the hero asset")
 
                 def update_for_image4ultra(model: str):
                     model_id = AVAILABLE_MODELS[model]
@@ -285,6 +298,8 @@ with gr.Blocks(title=TITLE, analytics_enabled=False, theme="Zarkel/IBM_Carbon_Th
             style_image_input,
             style_image_strength_input,
             model_input,
+            lighting_seed_input,
+            enable_groundplane_input,
         ],
         outputs=[result, request_display, response_display],
     )
