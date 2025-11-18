@@ -364,7 +364,6 @@ class APIHandler:
                 headers = {
                     "Content-Type": "application/json",
                     "Accept": "application/json",
-                    "Authorization": "Bearer " + api_key,
                 }
                 image_data = requests.get(image_url, headers=headers).content
                 image_paths.append(utils.save_image(image_data, "./output/"))
