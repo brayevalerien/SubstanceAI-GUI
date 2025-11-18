@@ -242,7 +242,7 @@ class APIHandler:
             style_image_name (str): name of the style image in the space (e.g. "style_image/mystyle.png"). Ignored if None.
             style_image_strength (int): strength of the style reference image over the generation. Ignored if style_image_name is None.
             model_id (str): id of the image generation model.
-            lighting_seed (int): 
+            lighting_seed (int):
             enable_groundplane (bool): enable the auto generated groundplane under the hero asset.
 
         Returns:
@@ -364,6 +364,7 @@ class APIHandler:
                 headers = {
                     "Content-Type": "application/json",
                     "Accept": "application/json",
+                    # "Authorization": "Bearer " + api_key,
                 }
                 image_data = requests.get(image_url, headers=headers).content
                 image_paths.append(utils.save_image(image_data, "./output/"))
