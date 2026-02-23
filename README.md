@@ -8,7 +8,7 @@ A gradio-based UI for accessing the Adobe Substance 3D API, focusing on the "Gen
 > In this section it's assumed that you have [Git](https://git-scm.com/), [Python](https://www.python.org/) and [Anaconda](https://www.anaconda.com/download) properly installed on your machine.
 
 Follow these steps to install SubstanceAI GUI:
-1. `git clone https://github.com/brayevalerien/SubstanceAI-GUI` (make sure you're logged in because the repository is private, you need to be authentified  as a collaborator to clone it)
+1. `git clone https://github.com/brayevalerien/SubstanceAI-GUI`
 2. `cd SubstanceAI-GUI`
 3. `conda create -n substanceai-gui -y python=3.12 && conda activate substanceai-gui`
 4. `pip install -r requirements.txt`
